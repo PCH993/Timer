@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Nedräkning & Klocka – Anpassade färger v9</title>
+<style>
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --panel: #000000; /* headerfärg svart */
+    --button-bg: #283e59; /* knappar */
+    --button-text: #d4e0f1; /* knapptext */
+    --warn: #ffcc00;
+    --alert: #ff4d4f;
+  }
+
+  body {
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family: system-ui, sans-serif;
+    display:flex; flex-direction:column;
+  }
+
+  header {
+    background: var(--panel);
+    padding: 12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    border-bottom:4px solid #000; /* svart kant */
+  }
+
+  .tabs { display:flex; gap:8px; }
+  .tab {
+    padding:8px 14px;
+    background:transparent;
+    border:2px solid var(--button-bg);
+    color: var(--button-bg);
+    border-radius:20px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .tab.active {
+    background: var(--button-bg);
+    color: var(--button-text);
+  }
+
+  .controls { display:flex; gap:8px; }
+  .controls input {
+    padding:8px;
+    background:#fff;
+    color:#000;
+    border-radius:6px;
+    width:90px;
+    text-align:center;
+  }
+
+  .btn {
+    padding:8px 14px;
+    background: var(--button-bg);
+    color: var(--button-text);
+    border:2px solid #000; /* svarta kanter på knappar */
+    border-radius:6px;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  main { flex:1; display:grid; place-items:center; padding:20px; }
+  .view { display:none; width:100%; height:100%; }
+  .view.active { display:grid; place-items:center; }
+
+  #timer, #timerBoth {
+    font-size: clamp(84px, 20vw, 260px);
+    font-weight:800;
+  }
+  #clockBoth, #liveClock {
+    font-size: clamp(76px, 18vw, 240px);
+    font-weight:800;
+  }
+
+  .warn { color: var(--warn) !important; }
+  .alert { color: var(--alert) !important; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="tabs">
+      <button class="tab" id="tabClock">Klocka</button>
+      <button class="tab" id="tabTimer">Timer</button>
+      <button class="tab" id="tabBoth">Båda</button>
+    </div>
+    <div class="controls">
+      <input type="number" id="minutesInput" placeholder="Minuter" />
+      <button class="btn" id="btnStart">Starta</button>
+      <button class="btn" id="btnReset">Återställ</button>
+      <button class="btn" id="btnFullscreen">Fullskärm</button>
+    </div>
+  </header>
+
+  <main id="stage">
+    <section class="view" id="viewClock"><div><div id="liveClock">--:--:--</div></div></section>
+    <section class="view" id="viewTimer"><div><div id="timer">00:00</div></div></section>
+    <section class="view" id="viewBoth"><div style="display:flex; flex-direction:column; gap:20px; align-items:center;"><div id="timerBoth">00:00</div><div id="clockBoth">--:--:--</div></div></section>
+  </main>
+
+<script>
+let countdown;
+let remaining=0;
+
+function fmt(t){const m=Math.floor(t/60),s=t%60;return String(m).padStart(2,'0')+":"+String(s).padStart(2,'0');}
+function fmtClock(d){return d.toTimeString().split(' ')[0];}
+
+function update(){
+  document.getElementById('timer').textContent=fmt(remaining);
+  document.getElementById('timerBoth').textContent=fmt(remaining);
+  color();
+}
+
+function color(){
+  let t1=document.getElementById('timer');
+  let t2=document.getElementById('timerBoth');
+  t1.classList.remove('warn','alert');
+  t2.classList.remove('warn','alert');
+  if(remaining<=120){t1.classList.add('alert'); t2.classList.add('alert');}
+  else if(remaining<=300){t1.classList.add('warn'); t2.classList.add('warn');}
+}
+
+function tick(){remaining--; if(remaining<0)remaining=0; update(); if(remaining===0)clearInterval(countdown);} 
+
+document.getElementById('btnStart').onclick=()=>{
+  let m=parseInt(document.getElementById('minutesInput').value);
+  if(!m)return;
+  remaining=m*60;
+  clearInterval(countdown);
+  countdown=setInterval(tick,1000);
+  update();
+};
+
+document.getElementById('btnReset').onclick=()=>{clearInterval(countdown); remaining=0; update();};
+
+document.getElementById('btnFullscreen').onclick=()=>{stage.requestFullscreen();};
+
+// Tabs
+function show(v){['Clock','Timer','Both'].forEach(x=>{
+  document.getElementById('view'+x).classList.remove('active');
+  document.getElementById('tab'+x).classList.remove('active');
+});
+  document.getElementById('view'+v).classList.add('active');
+  document.getElementById('tab'+v).classList.add('active');
+  document.querySelector('.controls').style.display = (v==='Timer' || v==='Both')?'':'none';
+}
+
+document.getElementById('tabClock').onclick=()=>show('Clock');
+document.getElementById('tabTimer').onclick=()=>show('Timer');
+document.getElementById('tabBoth').onclick=()=>show('Both');
+
+show('Both');
+setInterval(()=>{
+  const now=fmtClock(new Date());
+  document.getElementById('liveClock').textContent=now;
+  document.getElementById('clockBoth').textContent=now;
+},250);
+</script>
+</body>
+</html>
